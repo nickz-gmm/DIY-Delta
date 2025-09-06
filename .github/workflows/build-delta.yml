@@ -1,9 +1,9 @@
-name: Delta – Build installers (Windows + macOS)
+name: Delta CI
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
 
 env:
@@ -11,50 +11,100 @@ env:
 
 jobs:
   windows:
-  name: Windows – EXE + NSIS
-  runs-on: windows-2022
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    name: Windows EXE and NSIS
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Node 20
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-    - name: Enable Corepack + pnpm
-      run: |
-        corepack enable
-        corepack prepare pnpm@latest --activate
+      - name: Enable Corepack and pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
 
-    - name: Install frontend deps
-      working-directory: apps/desktop
-      run: pnpm install
+      - name: Install frontend deps
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm install
 
-    - name: Install Tauri CLI (dev dep)
-      working-directory: apps/desktop
-      run: pnpm add -D @tauri-apps/cli
+      - name: Install Tauri CLI (dev dep)
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm add -D @tauri-apps/cli
 
-    - name: Print tauri info (sanity)
-      working-directory: apps/desktop
-      run: pnpm tauri info
+      - name: Print Tauri info
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri info
 
-    - name: Setup Rust (stable MSVC)
-      uses: dtolnay/rust-toolchain@stable
+      - name: Setup Rust (stable MSVC)
+        uses: dtolnay/rust-toolchain@stable
 
-    - name: Install NSIS (for installer)
-      run: choco install nsis -y
+      - name: Install NSIS
+        run: choco install nsis -y
 
-    # Build once; NSIS will produce the installer AND Cargo will emit a raw .exe in target\release
-    - name: Build NSIS installer (also compiles exe)
-      working-directory: apps/desktop
-      run: pnpm tauri build --bundles nsis
+      # Build once with NSIS; this also compiles the raw exe in target\release
+      - name: Build NSIS installer
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri build --bundles nsis
 
-    - name: Upload artifacts (Windows)
-      uses: actions/upload-artifact@v4
-      with:
-        name: delta-windows
-        path: |
-          apps/desktop/target/release/*.exe
-          apps/desktop/target/release/bundle/nsis/**
-        if-no-files-found: error
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: delta-windows
+          path: |
+            ${{ env.APP_DIR }}/target/release/*.exe
+            ${{ env.APP_DIR }}/target/release/bundle/nsis/**
+          if-no-files-found: error
+
+  macos:
+    name: macOS app and dmg
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable Corepack and pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      # Remove this step once @vitejs/plugin-react is committed to package.json
+      - name: Add missing dev deps
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm add -D @vitejs/plugin-react @tauri-apps/cli
+
+      - name: Install frontend deps
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm install
+
+      - name: Print Tauri info
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri info
+
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build .app
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri build --bundles app
+
+      - name: Build .dmg
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri build --bundles dmg
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: delta-macos
+          path: |
+            ${{ env.APP_DIR }}/target/release/bundle/app/**
+            ${{ env.APP_DIR }}/target/release/bundle/dmg/**
+          if-no-files-found: error
