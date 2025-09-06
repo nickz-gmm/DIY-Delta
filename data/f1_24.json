@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "game": "f1_24",
+  "cars": [
+    {
+      "id": "rb_vcarb_01",
+      "name": "RB VCARB 01"
+    },
+    {
+      "id": "redbull_rb20",
+      "name": "Red Bull RB20"
+    },
+    {
+      "id": "mercedes_w15",
+      "name": "Mercedes W15"
+    },
+    {
+      "id": "ferrari_sf24",
+      "name": "Ferrari SF-24"
+    },
+    {
+      "id": "mcl38",
+      "name": "McLaren MCL38"
+    },
+    {
+      "id": "amr24",
+      "name": "Aston Martin AMR24"
+    },
+    {
+      "id": "a524",
+      "name": "Alpine A524"
+    },
+    {
+      "id": "vf24",
+      "name": "Haas VF-24"
+    },
+    {
+      "id": "c44",
+      "name": "Kick Sauber C44"
+    },
+    {
+      "id": "fw46",
+      "name": "Williams FW46"
+    }
+  ],
+   "tracks": [
+    {
+      "id": "bahrain",
+      "name": "Bahrain International Circuit"
+    },
+    {
+      "id": "jeddah",
+      "name": "Jeddah Corniche Circuit"
+    },
+    {
+      "id": "melbourne",
+      "name": "Albert Park, Melbourne"
+    },
+    {
+      "id": "suzuka",
+      "name": "Suzuka Circuit"
+    },
+    {
+      "id": "miami",
+      "name": "Miami International Autodrome"
+    },
+    {
+      "id": "imola",
+      "name": "Imola"
+    },
+    {
+      "id": "monaco",
+      "name": "Circuit de Monaco"
+    },
+    {
+      "id": "montreal",
+      "name": "Circuit Gilles Villeneuve"
+    },
+    {
+      "id": "barcelona",
+      "name": "Circuit de Barcelona-Catalunya"
+    },
+    {
+      "id": "redbullring",
+      "name": "Red Bull Ring"
+    },
+    {
+      "id": "silverstone",
+      "name": "Silverstone Circuit"
+    },
+    {
+      "id": "hungaroring",
+      "name": "Hungaroring"
+    },
+    {
+      "id": "spa",
+      "name": "Spa-Francorchamps"
+    },
+    {
+      "id": "zandvoort",
+      "name": "Circuit Zandvoort"
+    },
+    {
+      "id": "monza",
+      "name": "Monza"
+    },
+    {
+      "id": "baku",
+      "name": "Baku City Circuit"
+    },
+    {
+      "id": "singapore",
+      "name": "Marina Bay Street Circuit"
+    },
+    {
+      "id": "qatar",
+      "name": "Losail International Circuit"
+    },
+    {
+      "id": "cota",
+      "name": "Circuit of the Americas"
+    },
+    {
+      "id": "mexico",
+      "name": "Autodromo Hermanos Rodridguez"
+    },
+    {
+      "id": "brazil",
+      "name": "Interlagos, Sao Paulo"
+    },
+    {
+      "id": "vegas",
+      "name": "Las Vegas Grand Prix Circuit"
+    },
+    {
+      "id": "abudhabi",
+      "name": "Yas Marina Circuit"
+    }
+  ]
+}

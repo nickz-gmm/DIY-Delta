@@ -1,0 +1,16 @@
+[package]
+name = "delta-ingest-gt7"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+anyhow = "1.0"
+tokio = { version = "1.39", features=["rt-multi-thread","macros","net","time"] }
+salsa20 = "0.10"
+cipher = "0.4"
+bytes = "1.6"
+serde = { version = "1.0", features=["derive"] }
+async-trait = "0.1"
+delta-ingest-core = { path = "../delta-ingest-core" }
+byteorder = "1.5"

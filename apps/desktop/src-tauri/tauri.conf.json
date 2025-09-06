@@ -1,0 +1,23 @@
+{
+  "productName": "Delta",
+  "version": "0.2.0",
+  "identifier": "app.delta",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Delta",
+        "width": 1280,
+        "height": 840,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true
+      }
+    ]
+  },
+  "bundle": { "active": true, "targets": "all", "icon": [] }
+}

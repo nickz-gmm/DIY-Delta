@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "game": "lmu",
+  "cars": [
+    {
+      "id": "alpine_a424",
+      "name": "Alpine A424"
+    },
+    {
+      "id": "aston_valkyrie_amr_lmh",
+      "name": "Aston Martin Valkyrie AMR-LMH"
+    },
+    {
+      "id": "bmw_m_hybrid_v8",
+      "name": "BMW M Hybrid V8"
+    },
+    {
+      "id": "cadillac_vseriesr",
+      "name": "Cadillac V‑Series.R"
+    },
+    {
+      "id": "ferrari_499p",
+      "name": "Ferrari 499P"
+    },
+    {
+      "id": "glickenhaus_scg007",
+      "name": "Glickenhaus SCG 007"
+    },
+    {
+      "id": "isotta_tipo6",
+      "name": "Isotta Fraschini Tipo 6"
+    },
+    {
+      "id": "lamborghini_sc63",
+      "name": "Lamborghini SC63"
+    },
+    {
+      "id": "peugeot_9x8",
+      "name": "Peugeot 9X8"
+    },
+    {
+      "id": "peugeot_9x8_2024",
+      "name": "Peugeot 9X8 2024"
+    },
+    {
+      "id": "porsche_963",
+      "name": "Porsche 963"
+    },
+    {
+      "id": "toyota_gr010_hybrid",
+      "name": "Toyota GR010‑Hybrid"
+    },
+    {
+      "id": "vanwall_vandervell_680",
+      "name": "Vanwall Vandervell 680"
+    },
+    {
+      "id": "oreca_07_gibson_2023",
+      "name": "Oreca 07 Gibson (2023)"
+    },
+    {
+      "id": "oreca_07_gibson_2024",
+      "name": "Oreca 07 Gibson (2024)"
+    },
+    {
+      "id": "ford_mustang_lmgt3",
+      "name": "Ford Mustang LMGT3"
+    },
+    {
+      "id": "mclaren_720s_lmgt3_evo",
+      "name": "McLaren 720S LMGT3 Evo"
+    },
+    {
+      "id": "mercedes_amg_lmgt3",
+      "name": "Mercedes‑AMG LMGT3"
+    },
+    {
+      "id": "bmw_m4_lmgt3",
+      "name": "BMW M4 LMGT3"
+    },
+    {
+      "id": "aston_vantage_amr_lmgt3",
+      "name": "Aston Martin Vantage AMR LMGT3"
+    },
+    {
+      "id": "corvette_z06_lmgt3r",
+      "name": "Corvette Z06 LMGT3.R"
+    },
+    {
+      "id": "ferrari_296_lmgt3",
+      "name": "Ferrari 296 LMGT3"
+    },
+    {
+      "id": "lamborghini_huracan_lmgt3_evo2",
+      "name": "Lamborghini Huracán LMGT3 Evo 2"
+    },
+    {
+      "id": "lexus_rcf_lmgt3",
+      "name": "Lexus RC F LMGT3"
+    },
+    {
+      "id": "porsche_911_lmgt3r",
+      "name": "Porsche 911 LMGT3 R"
+    },
+    {
+      "id": "aston_vantage_gte",
+      "name": "Aston Martin Vantage GTE"
+    },
+    {
+      "id": "chevrolet_corvette_c8r",
+      "name": "Chevrolet Corvette C8.R"
+    },
+    {
+      "id": "ferrari_488_gte_evo",
+      "name": "Ferrari 488 GTE Evo"
+    },
+    {
+      "id": "porsche_911_rsr19",
+      "name": "Porsche 911 RSR‑19"
+    }
+  ],
+  "tracks": [
+    {
+      "id": "bahrain",
+      "name": "Bahrain International Circuit"
+    },
+    {
+      "id": "lemans",
+      "name": "Circuit de la Sarthe"
+    },
+    {
+      "id": "fuji",
+      "name": "Fuji Speedway"
+    },
+    {
+      "id": "monza",
+      "name": "Monza"
+    },
+    {
+      "id": "portimao",
+      "name": "Portimão (Algarve International Circuit)"
+    },
+    {
+      "id": "sebring",
+      "name": "Sebring International Raceway"
+    },
+    {
+      "id": "spa",
+      "name": "Spa‑Francorchamps"
+    },
+    {
+      "id": "cota",
+      "name": "Circuit of the Americas (COTA)"
+    },
+    {
+      "id": "imola",
+      "name": "Imola"
+    },
+    {
+      "id": "interlagos",
+      "name": "Interlagos"
+    },
+    {
+      "id": "lusail",
+      "name": "Lusail International Circuit"
+    }
+  ]
+}

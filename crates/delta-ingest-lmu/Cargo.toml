@@ -1,0 +1,13 @@
+[package]
+name = "delta-ingest-lmu"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = ["Win32_System_Memory","Win32_Foundation"] }
+anyhow = "1.0"
+delta-ingest-core = { path = "../delta-ingest-core" }
+serde = { version = "1.0", features=["derive"] }
+async-trait = "0.1"
+parking_lot = "0.12"

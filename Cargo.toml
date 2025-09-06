@@ -1,0 +1,12 @@
+[workspace]
+members = [
+  "apps/desktop/src-tauri",
+  "crates/model",
+  "crates/analysis",
+  "crates/io",
+  "crates/delta-ingest-core",
+  "crates/delta-ingest-f1",
+  "crates/delta-ingest-gt7",
+  "crates/delta-ingest-lmu"
+]
+resolver = "2"

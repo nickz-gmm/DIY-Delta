@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "games": [
+    { "id": "lmu", "name": "Le Mans Ultimate", "path": "lmu.json"},
+    { "id": "f1_24", "name": "F1 2024", "path": "f1_2024.json"},
+    { "id": "f1_25", "name": "F1 2025", "path": "f1_2025.json"},
+    { "id": "gt7", "name": "Gran Turismo 7", "path": "gt7.json"}
+  ]
+}
