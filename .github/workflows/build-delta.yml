@@ -6,10 +6,13 @@ on:
     branches: [ main ]
   pull_request:
 
+env:
+  APP_DIR: apps/desktop
+
 jobs:
   windows:
     name: Windows – EXE + NSIS
-    runs-on: windows-2022   # pin; change to windows-latest later if you like
+    runs-on: windows-2022  # pin now; you can switch to windows-latest later
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,35 +22,49 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Enable Corepack / pnpm
+      - name: Enable Corepack + pnpm
         run: |
           corepack enable
           corepack prepare pnpm@latest --activate
 
       - name: Install frontend deps
-        working-directory: apps/desktop
+        working-directory: ${{ env.APP_DIR }}
         run: pnpm install
 
-      # Official Tauri Action: sets up Rust, caches Cargo, installs NSIS on Windows
-      - name: Build (app + NSIS)
-        uses: tauri-apps/tauri-action@v0
-        with:
-          projectPath: apps/desktop
-          includeDebug: false
-          args: --bundles app,nsis
+      - name: Install Tauri CLI (dev dep)
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm add -D @tauri-apps/cli
+
+      - name: Print tauri info (sanity)
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri info
+
+      - name: Setup Rust (stable MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NSIS (for installer)
+        run: choco install nsis -y
+
+      - name: Build portable app (.exe)
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri build --bundles app
+
+      - name: Build NSIS installer
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri build --bundles nsis
 
       - name: Upload artifacts (Windows)
         uses: actions/upload-artifact@v4
         with:
           name: delta-windows
           path: |
-            apps/desktop/target/release/bundle/app/**
-            apps/desktop/target/release/bundle/nsis/**
+            ${{ env.APP_DIR }}/target/release/bundle/app/**
+            ${{ env.APP_DIR }}/target/release/bundle/nsis/**
           if-no-files-found: error
 
   macos:
     name: macOS – .app + .dmg
-    runs-on: macos-14        # pin; change to macos-latest later if you like
+    runs-on: macos-14      # pin now; switch to macos-latest later if you like
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,27 +74,39 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Enable Corepack / pnpm
+      - name: Enable Corepack + pnpm
         run: |
           corepack enable
           corepack prepare pnpm@latest --activate
 
       - name: Install frontend deps
-        working-directory: apps/desktop
+        working-directory: ${{ env.APP_DIR }}
         run: pnpm install
 
-      - name: Build (app + dmg)
-        uses: tauri-apps/tauri-action@v0
-        with:
-          projectPath: apps/desktop
-          includeDebug: false
-          args: --bundles app,dmg
+      - name: Install Tauri CLI (dev dep)
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm add -D @tauri-apps/cli
+
+      - name: Print tauri info (sanity)
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri info
+
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build .app
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri build --bundles app
+
+      - name: Build .dmg
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm tauri build --bundles dmg
 
       - name: Upload artifacts (macOS)
         uses: actions/upload-artifact@v4
         with:
           name: delta-macos
           path: |
-            apps/desktop/target/release/bundle/app/**
-            apps/desktop/target/release/bundle/dmg/**
+            ${{ env.APP_DIR }}/target/release/bundle/app/**
+            ${{ env.APP_DIR }}/target/release/bundle/dmg/**
           if-no-files-found: error
