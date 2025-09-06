@@ -1,0 +1,94 @@
+name: Build Delta (Windows + macOS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: apps/desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: apps/desktop/pnpm-lock.yaml
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup pnpm
+        run: corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build app (portable exe)
+        run: pnpm dlx @tauri-apps/cli build --bundles app
+
+      - name: Build NSIS installer
+        run: pnpm dlx @tauri-apps/cli build --bundles nsis
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: delta-windows
+          path: |
+            apps/desktop/target/release/bundle/app/**
+            apps/desktop/target/release/bundle/nsis/**
+
+  build-macos:
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: apps/desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: apps/desktop/pnpm-lock.yaml
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup pnpm
+        run: corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build macOS app
+        run: pnpm dlx @tauri-apps/cli build --bundles app
+
+      - name: Build dmg
+        run: pnpm dlx @tauri-apps/cli build --bundles dmg
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: delta-macos
+          path: |
+            apps/desktop/target/release/bundle/app/**
+            apps/desktop/target/release/bundle/dmg/**
