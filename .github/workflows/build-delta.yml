@@ -36,8 +36,8 @@ jobs:
         working-directory: apps/desktop
         run: pnpm install
 
-      # 🔑 The official Tauri action – it installs Rust, caches Cargo,
-      #    and on Windows it installs NSIS automatically.
+      # The official Tauri action – it installs Rust, caches Cargo,
+      # and on Windows it installs NSIS automatically.
       - name: Build with Tauri Action
         uses: tauri-apps/tauri-action@v0
         with:
