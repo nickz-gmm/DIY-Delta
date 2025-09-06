@@ -6,89 +6,140 @@ on:
     branches: [ main ]
   pull_request:
 
+env:
+  APP_DIR: apps/desktop
+
 jobs:
   build-windows:
-    runs-on: windows-latest
+    name: Windows NSIS Installer
+    runs-on: windows-2022   # pin for stability; change to windows-2025 when ready
     defaults:
       run:
         shell: pwsh
-        working-directory: apps/desktop
+        working-directory: ${{ env.APP_DIR }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Setup Node.js
+      - name: Detect lockfile & choose cache
+        id: lock
+        run: |
+          if (Test-Path pnpm-lock.yaml) { echo "cache=pnpm" >> $env:GITHUB_OUTPUT }
+          elseif (Test-Path package-lock.json) { echo "cache=npm" >> $env:GITHUB_OUTPUT }
+          else { echo "cache=none" >> $env:GITHUB_OUTPUT }
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: apps/desktop/pnpm-lock.yaml
+          cache: ${{ steps.lock.outputs.cache != 'none' && steps.lock.outputs.cache || '' }}
+          cache-dependency-path: |
+            ${{ env.APP_DIR }}/pnpm-lock.yaml
+            ${{ env.APP_DIR }}/package-lock.json
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup pnpm
+      - name: Setup pnpm (only if using pnpm)
+        if: ${{ steps.lock.outputs.cache == 'pnpm' }}
         run: corepack prepare pnpm@latest --activate
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Install deps
+        run: |
+          if (Test-Path pnpm-lock.yaml) { pnpm install }
+          else { npm ci }
 
-      - name: Build app (portable exe)
-        run: pnpm dlx @tauri-apps/cli build --bundles app
+      - name: Cache Cargo registry & target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build app (.exe folder)
+        run: |
+          if (Test-Path pnpm-lock.yaml) { npx -y @tauri-apps/cli build --bundles app }
+          else { npx -y @tauri-apps/cli build --bundles app }
 
       - name: Build NSIS installer
-        run: pnpm dlx @tauri-apps/cli build --bundles nsis
+        run: |
+          if (Test-Path pnpm-lock.yaml) { npx -y @tauri-apps/cli build --bundles nsis }
+          else { npx -y @tauri-apps/cli build --bundles nsis }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: delta-windows
           path: |
-            apps/desktop/target/release/bundle/app/**
-            apps/desktop/target/release/bundle/nsis/**
+            ${{ env.APP_DIR }}/target/release/bundle/app/**
+            ${{ env.APP_DIR }}/target/release/bundle/nsis/**
+          if-no-files-found: error
 
   build-macos:
-    runs-on: macos-latest
+    name: macOS .app + .dmg
+    runs-on: macos-14      # pin; move to macos-latest later
     defaults:
       run:
         shell: bash
-        working-directory: apps/desktop
+        working-directory: ${{ env.APP_DIR }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Setup Node.js
+      - name: Detect lockfile & choose cache
+        id: lock
+        run: |
+          if [ -f pnpm-lock.yaml ]; then echo "cache=pnpm" >> "$GITHUB_OUTPUT";
+          elif [ -f package-lock.json ]; then echo "cache=npm" >> "$GITHUB_OUTPUT";
+          else echo "cache=none" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: apps/desktop/pnpm-lock.yaml
+          cache: ${{ steps.lock.outputs.cache != 'none' && steps.lock.outputs.cache || '' }}
+          cache-dependency-path: |
+            ${{ env.APP_DIR }}/pnpm-lock.yaml
+            ${{ env.APP_DIR }}/package-lock.json
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup pnpm
+      - name: Setup pnpm (only if using pnpm)
+        if: ${{ steps.lock.outputs.cache == 'pnpm' }}
         run: corepack prepare pnpm@latest --activate
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Install deps
+        run: |
+          if [ -f pnpm-lock.yaml ]; then pnpm install;
+          else npm ci; fi
 
-      - name: Build macOS app
-        run: pnpm dlx @tauri-apps/cli build --bundles app
+      - name: Cache Cargo registry & target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build dmg
-        run: pnpm dlx @tauri-apps/cli build --bundles dmg
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build .app
+        run: npx -y @tauri-apps/cli build --bundles app
+
+      - name: Build .dmg
+        run: npx -y @tauri-apps/cli build --bundles dmg
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: delta-macos
           path: |
-            apps/desktop/target/release/bundle/app/**
-            apps/desktop/target/release/bundle/dmg/**
+            ${{ env.APP_DIR }}/target/release/bundle/app/**
+            ${{ env.APP_DIR }}/target/release/bundle/dmg/**
+          if-no-files-found: error
