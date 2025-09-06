@@ -7,59 +7,77 @@ on:
   pull_request:
 
 jobs:
-  build:
-    # Pin runners to avoid the Sept 2025 image switch surprise.
-    # You can switch back to -latest later.
-    strategy:
-      matrix:
-        os: [windows-2022, macos-14]
-    runs-on: ${{ matrix.os }}
-
+  windows:
+    name: Windows – EXE + NSIS
+    runs-on: windows-2022   # pin; change to windows-latest later if you like
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # Let the action pick the right cache automatically
-          cache: 'pnpm'
 
-      - name: Enable Corepack (pnpm)
-        run: corepack enable
-
-      - name: Prepare pnpm
-        run: corepack prepare pnpm@latest --activate
+      - name: Enable Corepack / pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
 
       - name: Install frontend deps
         working-directory: apps/desktop
         run: pnpm install
 
-      # The official Tauri action – it installs Rust, caches Cargo,
-      # and on Windows it installs NSIS automatically.
-      - name: Build with Tauri Action
+      # Official Tauri Action: sets up Rust, caches Cargo, installs NSIS on Windows
+      - name: Build (app + NSIS)
         uses: tauri-apps/tauri-action@v0
         with:
           projectPath: apps/desktop
-          # Choose what to build on each OS
-          # Windows: portable exe + NSIS installer
-          # macOS:  .app + .dmg
           includeDebug: false
-          args: >-
-            --bundles
-            ${{ startsWith(matrix.os, 'windows') && 'app,nsis' || 'app,dmg' }}
-        env:
-          # (Optional) If your frontend needs env vars, add them here
-          # VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
-          # TAURI private key vars only if you code-sign. Otherwise omit.
-          # TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          # TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          args: --bundles app,nsis
 
-      - name: Upload artifacts
+      - name: Upload artifacts (Windows)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ startsWith(matrix.os, 'windows') && 'delta-windows' || 'delta-macos' }}
+          name: delta-windows
           path: |
-            apps/desktop/target/release/bundle/**/*
+            apps/desktop/target/release/bundle/app/**
+            apps/desktop/target/release/bundle/nsis/**
+          if-no-files-found: error
+
+  macos:
+    name: macOS – .app + .dmg
+    runs-on: macos-14        # pin; change to macos-latest later if you like
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack / pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install frontend deps
+        working-directory: apps/desktop
+        run: pnpm install
+
+      - name: Build (app + dmg)
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: apps/desktop
+          includeDebug: false
+          args: --bundles app,dmg
+
+      - name: Upload artifacts (macOS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: delta-macos
+          path: |
+            apps/desktop/target/release/bundle/app/**
+            apps/desktop/target/release/bundle/dmg/**
           if-no-files-found: error
