@@ -1,4 +1,4 @@
-name: Build Delta (Windows + macOS)
+name: Delta – Build installers (Windows + macOS)
 
 on:
   workflow_dispatch:
@@ -6,140 +6,60 @@ on:
     branches: [ main ]
   pull_request:
 
-env:
-  APP_DIR: apps/desktop
-
 jobs:
-  build-windows:
-    name: Windows NSIS Installer
-    runs-on: windows-2022   # pin for stability; change to windows-2025 when ready
-    defaults:
-      run:
-        shell: pwsh
-        working-directory: ${{ env.APP_DIR }}
+  build:
+    # Pin runners to avoid the Sept 2025 image switch surprise.
+    # You can switch back to -latest later.
+    strategy:
+      matrix:
+        os: [windows-2022, macos-14]
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Detect lockfile & choose cache
-        id: lock
-        run: |
-          if (Test-Path pnpm-lock.yaml) { echo "cache=pnpm" >> $env:GITHUB_OUTPUT }
-          elseif (Test-Path package-lock.json) { echo "cache=npm" >> $env:GITHUB_OUTPUT }
-          else { echo "cache=none" >> $env:GITHUB_OUTPUT }
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: ${{ steps.lock.outputs.cache != 'none' && steps.lock.outputs.cache || '' }}
-          cache-dependency-path: |
-            ${{ env.APP_DIR }}/pnpm-lock.yaml
-            ${{ env.APP_DIR }}/package-lock.json
+          # Let the action pick the right cache automatically
+          cache: 'pnpm'
 
-      - name: Setup pnpm (only if using pnpm)
-        if: ${{ steps.lock.outputs.cache == 'pnpm' }}
-        run: corepack prepare pnpm@latest --activate
-
-      - name: Install deps
-        run: |
-          if (Test-Path pnpm-lock.yaml) { pnpm install }
-          else { npm ci }
-
-      - name: Cache Cargo registry & target
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Setup Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build app (.exe folder)
-        run: |
-          if (Test-Path pnpm-lock.yaml) { npx -y @tauri-apps/cli build --bundles app }
-          else { npx -y @tauri-apps/cli build --bundles app }
-
-      - name: Build NSIS installer
-        run: |
-          if (Test-Path pnpm-lock.yaml) { npx -y @tauri-apps/cli build --bundles nsis }
-          else { npx -y @tauri-apps/cli build --bundles nsis }
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: delta-windows
-          path: |
-            ${{ env.APP_DIR }}/target/release/bundle/app/**
-            ${{ env.APP_DIR }}/target/release/bundle/nsis/**
-          if-no-files-found: error
-
-  build-macos:
-    name: macOS .app + .dmg
-    runs-on: macos-14      # pin; move to macos-latest later
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ env.APP_DIR }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Enable Corepack
+      - name: Enable Corepack (pnpm)
         run: corepack enable
 
-      - name: Detect lockfile & choose cache
-        id: lock
-        run: |
-          if [ -f pnpm-lock.yaml ]; then echo "cache=pnpm" >> "$GITHUB_OUTPUT";
-          elif [ -f package-lock.json ]; then echo "cache=npm" >> "$GITHUB_OUTPUT";
-          else echo "cache=none" >> "$GITHUB_OUTPUT"; fi
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: ${{ steps.lock.outputs.cache != 'none' && steps.lock.outputs.cache || '' }}
-          cache-dependency-path: |
-            ${{ env.APP_DIR }}/pnpm-lock.yaml
-            ${{ env.APP_DIR }}/package-lock.json
-
-      - name: Setup pnpm (only if using pnpm)
-        if: ${{ steps.lock.outputs.cache == 'pnpm' }}
+      - name: Prepare pnpm
         run: corepack prepare pnpm@latest --activate
 
-      - name: Install deps
-        run: |
-          if [ -f pnpm-lock.yaml ]; then pnpm install;
-          else npm ci; fi
+      - name: Install frontend deps
+        working-directory: apps/desktop
+        run: pnpm install
 
-      - name: Cache Cargo registry & target
-        uses: actions/cache@v4
+      # 🔑 The official Tauri action – it installs Rust, caches Cargo,
+      #    and on Windows it installs NSIS automatically.
+      - name: Build with Tauri Action
+        uses: tauri-apps/tauri-action@v0
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Setup Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build .app
-        run: npx -y @tauri-apps/cli build --bundles app
-
-      - name: Build .dmg
-        run: npx -y @tauri-apps/cli build --bundles dmg
+          projectPath: apps/desktop
+          # Choose what to build on each OS
+          # Windows: portable exe + NSIS installer
+          # macOS:  .app + .dmg
+          includeDebug: false
+          args: >-
+            --bundles
+            ${{ startsWith(matrix.os, 'windows') && 'app,nsis' || 'app,dmg' }}
+        env:
+          # (Optional) If your frontend needs env vars, add them here
+          # VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
+          # TAURI private key vars only if you code-sign. Otherwise omit.
+          # TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          # TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: delta-macos
+          name: ${{ startsWith(matrix.os, 'windows') && 'delta-windows' || 'delta-macos' }}
           path: |
-            ${{ env.APP_DIR }}/target/release/bundle/app/**
-            ${{ env.APP_DIR }}/target/release/bundle/dmg/**
+            apps/desktop/target/release/bundle/**/*
           if-no-files-found: error
