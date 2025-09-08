@@ -35,8 +35,10 @@ impl TelemetrySource for GT7Source {
     async fn run(&self, tx: TelemetryTx) -> Result<(), IngestError> {
         let socket = UdpSocket::bind(&self.cfg.bind_addr).await
             .with_context(|| format!("bind {}", self.cfg.bind_addr))?;
-        socket.connect((self.cfg.console_ip.as_str(), 33740)).await?;
-
+       socket.connect((self.cfg.console_ip.as_str(), 33740))
+    .await
+    .with_context(|| format!("connect {}", self.cfg.console_ip))?;
+        
         // heartbeat: a single ASCII byte indicating variant, repeated ~1s
         let variant = self.cfg.packet_variant as u8;
         let hb = vec![variant];
