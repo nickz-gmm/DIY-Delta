@@ -1,4 +1,4 @@
-\
+
 #![cfg(windows)]
 use anyhow::Context;
 use windows::Win32::System::Memory::*;
