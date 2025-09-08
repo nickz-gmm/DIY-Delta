@@ -3,6 +3,7 @@
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use std::time::Duration;
+use async_trait::async_trait;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Game {
@@ -63,7 +64,7 @@ pub type TelemetryTx = crossbeam_channel::Sender<TelemetrySample>;
 pub type TelemetryRx = crossbeam_channel::Receiver<TelemetrySample>;
 
 /// Trait for any live source connector
-#[async_trait::async_trait]
+#[async_trait]
 pub trait TelemetrySource: Send + Sync {
     async fn run(&self, tx: TelemetryTx) -> Result<(), IngestError>;
 }
