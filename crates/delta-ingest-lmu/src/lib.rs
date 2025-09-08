@@ -9,6 +9,61 @@ use std::time::Duration;
 use std::thread;
 use delta_ingest_core::*;
 
+struct SharedMemoryMapping {
+    view: *mut c_void,
+    handle: HANDLE,
+}
+
+impl Drop for SharedMemoryMapping {
+    fn drop(&mut self) {
+        unsafe {
+            if !self.view.is_null() {
+                UnmapViewOfFile(self.view);
+            }
+            if !self.handle.is_invalid() {
+                CloseHandle(self.handle);
+            }
+        }
+    }
+}
+
+impl SharedMemoryMapping {
+    fn new(name: &str) -> Result<Self, IngestError> {
+        unsafe {
+            let name = CString::new(name).map_err(|_| 
+                IngestError::Msg("Invalid shared memory name".into()))?;
+            
+            let handle = OpenFileMappingA(FILE_MAP_READ, BOOL(0), PCSTR(name.as_ptr() as _))
+                .map_err(|_| IngestError::Msg(
+                    "LMU/rF2 Telemetry mapping not found. Ensure rF2SharedMemoryMapPlugin is installed".into()
+                ))?;
+
+            if handle.is_invalid() {
+                return Err(IngestError::Msg(
+                    "Failed to open shared memory mapping".into()
+                ));
+            }
+
+            let view = MapViewOfFile(
+                handle,
+                FILE_MAP_READ,
+                0,
+                0, 
+                std::mem::size_of::<RF2Telemetry>()
+            );
+
+            if view.is_null() {
+                CloseHandle(handle);
+                return Err(IngestError::Msg(
+                    "Failed to map view of shared memory".into()
+                ));
+            }
+
+            Ok(Self { view, handle })
+        }
+    }
+}
+
 /// Names of shared memory buffers created by rF2SharedMemoryMapPlugin (Telemetry/Scoring, etc).
 /// We'll consume only Telemetry for our purposes.
 const SM_TELEMETRY: &str = "$rFactor2SMMP_Telemetry$";
@@ -47,6 +102,31 @@ struct RF2Telemetry {
     _version_update_end: u32, // version check (end)
 }
 
+impl RF2Telemetry {
+    fn validate(&self) -> bool {
+        // Basic sanity checks
+        if self._version_update_begin != self._version_update_end {
+            return false;
+        }
+        
+        // Validate physics values are within reasonable bounds
+        if !(-1000.0..=1000.0).contains(&self.mLocalVel.x) ||
+           !(-1000.0..=1000.0).contains(&self.mLocalVel.y) ||
+           !(-1000.0..=1000.0).contains(&self.mLocalVel.z) {
+            return false;
+        }
+
+        // Validate control inputs
+        if !(0.0..=1.0).contains(&self.mThrottle) ||
+           !(0.0..=1.0).contains(&self.mBrake) ||
+           !(-1..=8).contains(&self.mGear) {
+            return false;
+        }
+
+        true
+    }
+}
+
 pub struct LMUSource;
 impl LMUSource { pub fn new() -> Self { Self } }
 
@@ -67,15 +147,18 @@ if view.is_null() {
     CloseHandle(hmap);
     return Err(IngestError::Msg("Failed to map LMU Telemetry view".into()));
 }
-            let mut last_frame: u64 = 0;
-            loop {
-                let telem: RF2Telemetry = std::ptr::read(view as *const RF2Telemetry);
-                // Basic sanity: version markers equal
-                if telem._version_update_begin != telem._version_update_end {
-                    // Torn frame; skip and yield
-                    thread::sleep(Duration::from_millis(5));
-                    continue;
-                }
+          use std::time::{Duration, Instant};
+
+const FRAME_INTERVAL: Duration = Duration::from_millis(20); // 50Hz target
+let mut last_frame_time = Instant::now();
+
+loop {
+    let telem: RF2Telemetry = std::ptr::read(mapping.view as *const RF2Telemetry);
+
+    if !telem.validate() { // assuming you implement validate() as in Step 3
+        thread::sleep(Duration::from_millis(1));
+        continue;
+    }
                 // Derive speed magnitude from local velocity
                 let speed_mps = (telem.mLocalVel.x.powi(2) + telem.mLocalVel.y.powi(2) + telem.mLocalVel.z.powi(2)).sqrt();
 
@@ -104,6 +187,13 @@ if view.is_null() {
                 };
                 let _ = tx.send(sample);
                 thread::sleep(Duration::from_millis(20)); // ~50 Hz
+
+    let elapsed = last_frame_time.elapsed();
+    if elapsed < FRAME_INTERVAL {
+        thread::sleep(FRAME_INTERVAL - elapsed);
+    }
+    last_frame_time = Instant::now();
+}
             }
         }
     }
