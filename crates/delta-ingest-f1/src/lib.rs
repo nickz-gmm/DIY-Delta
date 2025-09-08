@@ -1,4 +1,4 @@
-\
+
 use anyhow::Context;
 use tokio::net::UdpSocket;
 use bytes::Buf;
