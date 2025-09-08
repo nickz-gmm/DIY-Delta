@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::{fs::File, path::Path, io::BufRead};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use model::*;
+use crate::model::*; // FIX: Use `crate::model::*` for local path (assuming model.rs is in same crate).
 
 pub fn import_csv(path: &Path) -> Result<Vec<Lap>> {
     let mut rdr = csv::Reader::from_path(path)?;
@@ -122,6 +122,9 @@ struct CsvHeader {
     throttle: f64, brake: f64, gear: i8, rpm: f64,
 }
 
+// The above Default implementation for CsvHeader is unnecessary since we're using #[derive(Default)]
+// but if you want a custom default, use below, otherwise remove this block.
+/*
 impl Default for CsvHeader {
     fn default() -> Self {
         Self {
@@ -131,6 +134,7 @@ impl Default for CsvHeader {
         }
     }
 }
+*/
 
 #[derive(Serialize, Deserialize)]
 struct CsvRow {
