@@ -1,6 +1,6 @@
 \
 use anyhow::Context;
-use tokio::{net::UdpSocket, time::{self, Duration, Instant}};
+use tokio::{net::UdpSocket, time::{self, Duration}};
 use delta_ingest_core::{*, Game as GameId};
 use salsa20::cipher::{KeyIvInit, StreamCipher};
 use salsa20::Salsa20;
