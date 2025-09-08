@@ -56,7 +56,9 @@ impl TelemetrySource for LMUSource {
         unsafe {
             // Open an existing named mapping
             let name = CString::new(SM_TELEMETRY).unwrap();
-            let hmap = OpenFileMappingA(FILE_MAP_READ, BOOL(0), PCSTR(name.as_ptr() as _));
+            let hmap = OpenFileMappingA(FILE_MAP_READ, BOOL(0), PCSTR(name.as_ptr() as _))
+    .map_err(|_| IngestError::Msg("LMU/rF2 Telemetry mapping not found. Ensure the rF2SharedMemoryMapPlugin is installed and enabled.".into()))?;
+
 if hmap.is_invalid() {
     return Err(IngestError::Msg("LMU/rF2 Telemetry mapping not found. Ensure the rF2SharedMemoryMapPlugin is installed and enabled.".into()));
 }
