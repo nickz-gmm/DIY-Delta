@@ -57,14 +57,14 @@ impl TelemetrySource for LMUSource {
             // Open an existing named mapping
             let name = CString::new(SM_TELEMETRY).unwrap();
             let hmap = OpenFileMappingA(FILE_MAP_READ, BOOL(0), PCSTR(name.as_ptr() as _));
-            if hmap.is_invalid() {
-                return Err(IngestError::Msg("LMU/rF2 Telemetry mapping not found. Ensure the rF2SharedMemoryMapPlugin is installed and enabled.".into()));
-            }
-            let view = MapViewOfFile(hmap, FILE_MAP_READ, 0, 0, std::mem::size_of::<RF2Telemetry>());
-            if view.is_null() {
-                CloseHandle(hmap);
-                return Err(IngestError::Msg("Failed to map LMU Telemetry view".into()));
-            }
+if hmap.is_invalid() {
+    return Err(IngestError::Msg("LMU/rF2 Telemetry mapping not found. Ensure the rF2SharedMemoryMapPlugin is installed and enabled.".into()));
+}
+let view = MapViewOfFile(hmap, FILE_MAP_READ, 0, 0, std::mem::size_of::<RF2Telemetry>());
+if view.is_null() {
+    CloseHandle(hmap);
+    return Err(IngestError::Msg("Failed to map LMU Telemetry view".into()));
+}
             let mut last_frame: u64 = 0;
             loop {
                 let telem: RF2Telemetry = std::ptr::read(view as *const RF2Telemetry);
