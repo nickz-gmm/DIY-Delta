@@ -1,4 +1,3 @@
-\
 use anyhow::Context;
 use tokio::{net::UdpSocket, time::{self, Duration}};
 use delta_ingest_core::{*, Game as GameId};
