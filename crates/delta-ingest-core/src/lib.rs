@@ -1,11 +1,9 @@
 //! Core telemetry model and traits used by Delta
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
-use std::time::Duration;
+use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Game {
     F1_2024,
     F1_2025,
@@ -63,12 +61,13 @@ pub enum IngestError {
 pub type TelemetryTx = crossbeam_channel::Sender<TelemetrySample>;
 pub type TelemetryRx = crossbeam_channel::Receiver<TelemetrySample>;
 
-/// Trait for any live source connector
+/// Trait for any live source connector.
 #[async_trait]
 pub trait TelemetrySource: Send + Sync {
     async fn run(&self, tx: TelemetryTx) -> Result<(), IngestError>;
 }
 
+/// Create an unbounded telemetry channel.
 pub fn channel() -> (TelemetryTx, TelemetryRx) {
     crossbeam_channel::unbounded()
 }
