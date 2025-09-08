@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{fs::File, path::Path};
+use std::{fs::File, path::Path, io::BufRead};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use model::*;
@@ -115,12 +115,13 @@ fn new_lap(r: &CsvRow) -> Lap {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 struct CsvHeader {
     game: String, car: String, track: String, lap_number: u32,
     t_ms: f64, lap_distance_m: f64, x: f64, y: f64, speed_kph: f64,
     throttle: f64, brake: f64, gear: i8, rpm: f64,
 }
+
 impl Default for CsvHeader {
     fn default() -> Self {
         Self {
