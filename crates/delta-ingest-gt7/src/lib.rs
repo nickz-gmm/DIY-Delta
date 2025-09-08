@@ -34,10 +34,10 @@ impl TelemetrySource for GT7Source {
     async fn run(&self, tx: TelemetryTx) -> Result<(), IngestError> {
         let socket = UdpSocket::bind(&self.cfg.bind_addr).await
             .with_context(|| format!("bind {}", self.cfg.bind_addr))?;
-       socket.connect((self.cfg.console_ip.as_str(), 33740))
-    .await
-    .with_context(|| format!("connect {}", self.cfg.console_ip))?;
-        
+        socket.connect((&*self.cfg.console_ip, 33740))
+            .await
+            .with_context(|| format!("connect {}", self.cfg.console_ip))?;
+
         // heartbeat: a single ASCII byte indicating variant, repeated ~1s
         let variant = self.cfg.packet_variant as u8;
         let hb = vec![variant];
@@ -50,7 +50,7 @@ impl TelemetrySource for GT7Source {
                 _ = hb_interval.tick() => {
                     let _ = socket.send(&hb).await;
                 }
-                Ok((len, _)) = socket.recv_from(&mut buf) => {
+                Ok(len) = socket.recv(&mut buf) => {
                     if let Some(sample) = decrypt_and_parse(&buf[..len], self.cfg.packet_variant) {
                         let _ = tx.send(sample);
                     }
@@ -119,6 +119,7 @@ fn decrypt_and_parse(pkt: &[u8], variant: char) -> Option<TelemetrySample> {
 
     // Skip to dynamics (0x40)
     let dyn_off = 0x40usize;
+    if payload.len() < dyn_off + 0x14 { return None; }
     let mut d = Cursor::new(&payload[dyn_off..]);
     let speed_kmh = d.read_f32::<LittleEndian>().ok()?;
     let engine_rpm = d.read_f32::<LittleEndian>().ok()?;
