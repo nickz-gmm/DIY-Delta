@@ -68,7 +68,15 @@ pub struct CornerLabel {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct BBox { pub minx: f64, pub maxx: f64, pub miny: f64, pub maxy: f64 }
+pub struct BBox { 
+    pub minx: f64, 
+    pub maxx: f64, 
+    pub miny: f64, 
+    pub maxy: f64 
+}
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Point2 { pub x: f64, pub y: f64 }
+pub struct Point2 { 
+    pub x: f64, 
+    pub y: f64 
+}
