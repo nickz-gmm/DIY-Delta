@@ -9,6 +9,7 @@ export const stopAll = () => invoke('stop_all')
 export const listLaps = () => invoke('list_laps') as Promise<any[]>
 export const analyzeLaps = (ids: string[]) => invoke('analyze_laps', { lapIds: ids })
 export const buildTrackMap = (id: string) => invoke('build_track_map', { lapId: id })
+export const getTrackMap = (id: string) => invoke('get_track_map', { lapId: id })
 
 export const importFile = (path: string) => invoke('import_file', { path })
 export const exportFile = (kind: 'csv'|'ndjson'|'motec_csv', path:string) => invoke('export_file', { kind, path })
