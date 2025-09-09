@@ -66,16 +66,18 @@ pub async fn list_laps(state: State<'_, AppSession>) -> Result<Vec<LapRow>, Stri
 #[tauri::command]
 pub async fn analyze_laps(state: State<'_, AppSession>, lapIds: Vec<Uuid>) -> Result<serde_json::Value, String> {
     let inner = state.inner.lock();
-    let mut laps = vec![];
+    let mut lap_refs: Vec<&Lap> = Vec::with_capacity(lapIds.len());
     for id in lapIds {
-        if let Some(l) = inner.laps.get(&id) { laps.push(l.clone()); }
+        if let Some(l) = inner.laps.get(&id) { 
+            lap_refs.push(l); 
+        }
     }
-    if laps.is_empty() { return Err("No laps".into()) }
-    let ref_lap = laps.iter().min_by_key(|l| l.total_time_ms).unwrap().clone();
-    let overlay = an::overlay_speed_vs_distance(&laps);
-    let delta_ribbon = an::rolling_delta_vs_reference(&ref_lap, &laps);
-    let corners = an::per_corner_metrics(&ref_lap);
-    let summary = an::lap_summary(&laps);
+    if lap_refs.is_empty() { return Err("No laps".into()) }
+    let ref_lap = lap_refs.iter().min_by_key(|l| l.total_time_ms).unwrap();
+    let overlay = an::overlay_speed_vs_distance(&lap_refs);
+    let delta_ribbon = an::rolling_delta_vs_reference(ref_lap, &lap_refs);
+    let corners = an::per_corner_metrics(ref_lap);
+    let summary = an::lap_summary(&lap_refs);
     Ok(serde_json::json!({
         "overlay": overlay,
         "delta_ribbon": delta_ribbon,
@@ -87,8 +89,8 @@ pub async fn analyze_laps(state: State<'_, AppSession>, lapIds: Vec<Uuid>) -> Re
 #[tauri::command]
 pub async fn build_track_map(state: State<'_, AppSession>, lapId: Uuid) -> Result<serde_json::Value, String> {
     let inner = state.inner.lock();
-    let lap = inner.laps.get(&lapId).ok_or("Lap not found")?.clone();
-    let map = an::build_track_map(&lap);
+    let lap = inner.laps.get(&lapId).ok_or("Lap not found")?;
+    let map = an::build_track_map(lap);
     Ok(serde_json::to_value(map).unwrap())
 }
 
@@ -115,7 +117,7 @@ pub async fn import_file(state: State<'_, AppSession>, path: String) -> Result<u
 #[tauri::command]
 pub async fn export_file(state: State<'_, AppSession>, kind: String, path: String) -> Result<(), String> {
     let inner = state.inner.lock();
-    let laps: Vec<Lap> = inner.laps.values().cloned().collect();
+    let laps: Vec<&Lap> = inner.laps.values().collect();
     let p = PathBuf::from(path);
     match kind.as_str() {
         "csv" => iox::export_csv(&laps, &p).map_err(|e| e.to_string())?,

@@ -8,7 +8,8 @@ pub fn overlay_speed_vs_distance(laps: &[Lap]) -> Value {
         .fold(0.0_f64, f64::max);
 
     let step = 1.0_f64;
-    let mut rows = Vec::new();
+    let expected_rows = ((max_len / step) as usize).saturating_add(1);
+    let mut rows = Vec::with_capacity(expected_rows);
     let mut d = 0.0_f64;
 
     while d <= max_len {
@@ -51,7 +52,7 @@ pub fn lap_summary(laps: &[Lap]) -> Value {
     };
 
     // collect simple 3-way split sector times (ms) across all laps
-    let mut sector_times_ms = Vec::new();
+    let mut sector_times_ms = Vec::with_capacity(laps.len() * 3);
     for l in laps {
         sector_times_ms.extend(thirds(l).into_iter().map(|x| x as f64));
     }
@@ -109,7 +110,8 @@ pub fn rolling_delta_vs_reference(reference: &Lap, laps: &[Lap]) -> Value {
         .unwrap_or(0.0);
 
     let step = 1.0_f64;
-    let mut rows = Vec::new();
+    let expected_rows = ((max_len / step) as usize).saturating_add(1);
+    let mut rows = Vec::with_capacity(expected_rows);
     let mut d = 0.0_f64;
 
     while d <= max_len {
@@ -161,12 +163,15 @@ fn time_at_distance(lap: &Lap, dist: f64) -> f64 {
 }
 
 pub fn build_track_map(lap: &Lap) -> TrackMap {
-    let pl: Vec<Point2> = lap.points.iter().map(|p| Point2 { x: p.x, y: p.y }).collect();
+    let mut pl = Vec::with_capacity(lap.points.len());
+    for p in &lap.points {
+        pl.push(Point2 { x: p.x, y: p.y });
+    }
     let bbox = bbox_of(&pl);
     let curv = curvature_series(&lap.points);
     let peaks = peak_indices(&curv, 12, 0.03);
 
-    let mut corners = Vec::new();
+    let mut corners = Vec::with_capacity(peaks.len());
     for (i, idx) in peaks.iter().enumerate() {
         if let Some(p) = lap.points.get(*idx) {
             corners.push(CornerLabel {
@@ -299,7 +304,7 @@ fn auto_sectors(lap: &Lap, curv: &[f64], n: usize) -> Vec<Sector> {
 pub fn per_corner_metrics(reference: &Lap) -> Vec<Value> {
     let curv = curvature_series(&reference.points);
     let peaks = peak_indices(&curv, 12, 0.03);
-    let mut out = Vec::new();
+    let mut out = Vec::with_capacity(peaks.len());
 
     for (i, idx) in peaks.iter().enumerate() {
         if reference.points.is_empty() {
