@@ -8,7 +8,8 @@ pub fn overlay_speed_vs_distance(laps: &[Lap]) -> Value {
         .fold(0.0_f64, f64::max);
 
     let step = 1.0_f64;
-    let mut rows = Vec::new();
+    let expected_rows = ((max_len / step) as usize).saturating_add(1);
+    let mut rows = Vec::with_capacity(expected_rows);
     let mut d = 0.0_f64;
 
     while d <= max_len {
@@ -23,6 +24,84 @@ pub fn overlay_speed_vs_distance(laps: &[Lap]) -> Value {
     }
 
     Value::Array(rows)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    fn create_test_lap() -> Lap {
+        Lap {
+            id: Uuid::new_v4(),
+            meta: LapMeta {
+                id: Uuid::new_v4(),
+                game: "test".to_string(),
+                car: "test_car".to_string(),
+                track: "test_track".to_string(),
+                lap_number: 1,
+            },
+            total_time_ms: 60000,
+            points: vec![
+                TelemetryPoint {
+                    t_ms: 0.0,
+                    lap_distance_m: 0.0,
+                    x: 0.0,
+                    y: 0.0,
+                    speed_kph: 100.0,
+                    throttle: 1.0,
+                    brake: 0.0,
+                    gear: 3,
+                    rpm: 5000.0,
+                },
+                TelemetryPoint {
+                    t_ms: 1000.0,
+                    lap_distance_m: 50.0,
+                    x: 10.0,
+                    y: 5.0,
+                    speed_kph: 120.0,
+                    throttle: 0.8,
+                    brake: 0.0,
+                    gear: 4,
+                    rpm: 5500.0,
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn test_lap_summary_with_references() {
+        let lap1 = create_test_lap();
+        let lap2 = create_test_lap();
+        let laps = vec![lap1, lap2];
+        
+        let summary = lap_summary(&laps);
+        assert!(summary["best_ms"].is_number());
+        assert!(summary["worst_ms"].is_number());
+        assert!(summary["avg_ms"].is_number());
+        assert!(summary["consistency"].is_number());
+    }
+
+    #[test]
+    fn test_overlay_speed_vs_distance() {
+        let lap = create_test_lap();
+        let laps = vec![lap];
+        
+        let overlay = overlay_speed_vs_distance(&laps);
+        assert!(overlay.is_array());
+        if let Value::Array(rows) = overlay {
+            assert!(!rows.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_build_track_map() {
+        let lap = create_test_lap();
+        let track_map = build_track_map(&lap);
+        
+        assert_eq!(track_map.polyline.len(), lap.points.len());
+        assert!(!track_map.sectors.is_empty());
+    }
 }
 
 fn sample_speed_at_distance(lap: &Lap, dist: f64) -> f64 {
@@ -51,7 +130,7 @@ pub fn lap_summary(laps: &[Lap]) -> Value {
     };
 
     // collect simple 3-way split sector times (ms) across all laps
-    let mut sector_times_ms = Vec::new();
+    let mut sector_times_ms = Vec::with_capacity(laps.len() * 3);
     for l in laps {
         sector_times_ms.extend(thirds(l).into_iter().map(|x| x as f64));
     }
@@ -109,7 +188,8 @@ pub fn rolling_delta_vs_reference(reference: &Lap, laps: &[Lap]) -> Value {
         .unwrap_or(0.0);
 
     let step = 1.0_f64;
-    let mut rows = Vec::new();
+    let expected_rows = ((max_len / step) as usize).saturating_add(1);
+    let mut rows = Vec::with_capacity(expected_rows);
     let mut d = 0.0_f64;
 
     while d <= max_len {
@@ -161,12 +241,15 @@ fn time_at_distance(lap: &Lap, dist: f64) -> f64 {
 }
 
 pub fn build_track_map(lap: &Lap) -> TrackMap {
-    let pl: Vec<Point2> = lap.points.iter().map(|p| Point2 { x: p.x, y: p.y }).collect();
+    let mut pl = Vec::with_capacity(lap.points.len());
+    for p in &lap.points {
+        pl.push(Point2 { x: p.x, y: p.y });
+    }
     let bbox = bbox_of(&pl);
     let curv = curvature_series(&lap.points);
     let peaks = peak_indices(&curv, 12, 0.03);
 
-    let mut corners = Vec::new();
+    let mut corners = Vec::with_capacity(peaks.len());
     for (i, idx) in peaks.iter().enumerate() {
         if let Some(p) = lap.points.get(*idx) {
             corners.push(CornerLabel {
@@ -273,7 +356,10 @@ fn auto_sectors(lap: &Lap, curv: &[f64], n: usize) -> Vec<Sector> {
     }
 
     // Choose the top (n-1) curvature peaks as cut points.
-    let mut idx: Vec<(usize, f64)> = curv.iter().enumerate().map(|(i, &v)| (i, v)).collect();
+    let mut idx = Vec::with_capacity(curv.len());
+    for (i, &v) in curv.iter().enumerate() {
+        idx.push((i, v));
+    }
     idx.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut cuts: Vec<usize> = idx.into_iter().take(n.saturating_sub(1)).map(|(i, _)| i).collect();
@@ -299,7 +385,7 @@ fn auto_sectors(lap: &Lap, curv: &[f64], n: usize) -> Vec<Sector> {
 pub fn per_corner_metrics(reference: &Lap) -> Vec<Value> {
     let curv = curvature_series(&reference.points);
     let peaks = peak_indices(&curv, 12, 0.03);
-    let mut out = Vec::new();
+    let mut out = Vec::with_capacity(peaks.len());
 
     for (i, idx) in peaks.iter().enumerate() {
         if reference.points.is_empty() {
