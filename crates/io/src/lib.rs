@@ -2,7 +2,6 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::{BufRead, Write}, path::Path};
 use uuid::Uuid;
-use std::io::Write;
 
 use model::*; // assumes Lap, LapMeta, TelemetryPoint, etc. are in this crate
 
@@ -65,12 +64,18 @@ pub fn export_csv(laps: &[Lap], path: &Path) -> Result<()> {
     ])?;
 
     for l in laps {
+        // Cache the metadata strings to avoid repeated cloning
+        let game = &l.meta.game;
+        let car = &l.meta.car;
+        let track = &l.meta.track;
+        let lap_number = l.meta.lap_number;
+        
         for p in &l.points {
             w.serialize(CsvRow {
-                game: l.meta.game.clone(),
-                car: l.meta.car.clone(),
-                track: l.meta.track.clone(),
-                lap_number: l.meta.lap_number,
+                game: game.clone(),
+                car: car.clone(),
+                track: track.clone(),
+                lap_number,
                 t_ms: p.t_ms,
                 lap_distance_m: p.lap_distance_m,
                 x: p.x,
@@ -131,6 +136,12 @@ pub fn export_motec_csv(laps: &[Lap], path: &Path) -> Result<()> {
 
     for l in laps {
         let t0 = l.points.first().map(|p| p.t_ms).unwrap_or(0.0);
+        // Cache strings to avoid repeated cloning
+        let track = &l.meta.track;
+        let car = &l.meta.car;
+        let game = &l.meta.game;
+        let lap_number_str = l.meta.lap_number.to_string();
+        
         for p in &l.points {
             w.write_record(&[
                 format!("{:.6}", (p.t_ms - t0) / 1000.0),
@@ -142,10 +153,10 @@ pub fn export_motec_csv(laps: &[Lap], path: &Path) -> Result<()> {
                 format!("{:.3}", p.brake),
                 format!("{}", p.gear),
                 format!("{:.1}", p.rpm),
-                format!("{}", l.meta.lap_number),
-                l.meta.track.clone(),
-                l.meta.car.clone(),
-                l.meta.game.clone(),
+                lap_number_str.clone(),
+                track.clone(),
+                car.clone(),
+                game.clone(),
             ])?;
         }
     }
