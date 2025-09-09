@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::BufRead, path::Path};
 use uuid::Uuid;
+use std::io::Write;
 
 use crate::model::*; // assumes Lap, LapMeta, TelemetryPoint, etc. are in this crate
 
@@ -104,7 +105,6 @@ pub fn export_ndjson(laps: &[Lap], path: &Path) -> Result<()> {
     let mut w = std::io::BufWriter::new(f);
     for l in laps {
         let s = serde_json::to_string(l)?;
-        use std::io::Write;
         writeln!(w, "{}", s)?;
     }
     w.flush()?;
