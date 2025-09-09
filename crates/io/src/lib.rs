@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::{BufRead, Write}, path::Path};
 use uuid::Uuid;
+use std::io::Write;
 
 use model::*; // assumes Lap, LapMeta, TelemetryPoint, etc. are in this crate
 
