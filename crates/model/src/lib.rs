@@ -16,7 +16,7 @@ pub struct TelemetryPoint {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct LapMeta {
-    #[serde(with = "uuid::serde")]
+    #[serde(with = "uuid::serde::simple")]
     pub id: Uuid,
     pub game: String,
     pub car: String,
@@ -26,7 +26,7 @@ pub struct LapMeta {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Lap {
-    #[serde(with = "uuid::serde")]
+    #[serde(with = "uuid::serde::simple")]
     pub id: Uuid,
     pub meta: LapMeta,
     pub total_time_ms: u64,
