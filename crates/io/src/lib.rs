@@ -4,7 +4,7 @@ use std::{fs::File, io::BufRead, path::Path};
 use uuid::Uuid;
 use std::io::Write;
 
-use crate::model::*; // assumes Lap, LapMeta, TelemetryPoint, etc. are in this crate
+use model::*; // assumes Lap, LapMeta, TelemetryPoint, etc. are in this crate
 
 pub fn import_csv(path: &Path) -> Result<Vec<Lap>> {
     let mut rdr = csv::Reader::from_path(path)?;
