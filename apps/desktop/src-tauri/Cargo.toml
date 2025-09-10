@@ -2,6 +2,7 @@
 name = "delta-desktop"
 version = "0.2.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 tauri = { version = "2.0.0", features = ["macos-private-api"] }
