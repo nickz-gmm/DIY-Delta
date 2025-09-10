@@ -9,12 +9,18 @@ use std::{fs, path::PathBuf};
 use serde_json::{json, Value};
 use crate::session::AppSession;
 
-#[derive(Serialize, Deserialize)]
-struct LapRow { id: Uuid, game: String, track: String, car: String, lap_number: u32, time_ms: u64 }
-id: Uuid, game: String, track: String, car: String, lap_number: u32, time_ms: u64
-
+#[derive(Debug, Deserialize, Serialize)]
 #[tauri::command]
+pub async fn save_lap(
+    id: Uuid,
+    game: String,
+    track: String,
+    car: String,
+    lap_number: u32,
+    time_ms: u64,
+) -> Result<(), String> {
     Ok(())
+}
 
 #[tauri::command]
     let src = GT7Source::new(cfg);
